@@ -1,0 +1,175 @@
+// Prisma schema for ForgeReel Studio
+// Run `npm run db:push` after setting DATABASE_URL to create tables.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  // Swap to "postgresql" for production (Vercel Postgres, Supabase, Neon, etc.)
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(cuid())
+  name          String?
+  email         String    @unique
+  emailVerified DateTime?
+  passwordHash  String?
+  image         String?
+  createdAt     DateTime  @default(now())
+
+  role          String    @default("user") // "user" | "admin"
+  isBetaTester  Boolean   @default(false)  // redeemed a beta invite link
+  lastDailyBonusAt DateTime? // last time the daily login credit bonus was granted
+  credits       Int       @default(20) // free trial credits on signup
+  generations   Generation[]
+  transactions  Transaction[]
+  accounts      Account[]
+  sessions      Session[]
+  projects      Project[]
+  feedback      Feedback[]
+  invitesRedeemed Invite[]
+}
+
+// --- Beta testing: admin-generated invite links to share with friends &
+// family. Redeeming one (at signup) marks the user as a beta tester and
+// grants a credit bonus; each code is single-use. ---
+model Invite {
+  id           String    @id @default(cuid())
+  code         String    @unique
+  label        String?   // e.g. "For Aashi" — just a note for the admin
+  bonusCredits Int       @default(30)
+  createdAt    DateTime  @default(now())
+
+  redeemedAt   DateTime?
+  redeemedById String?
+  redeemedBy   User?     @relation(fields: [redeemedById], references: [id])
+}
+
+// Lightweight in-app feedback from beta testers / any user, visible to admins.
+model Feedback {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  message   String
+  createdAt DateTime @default(now())
+
+  @@index([userId])
+}
+
+// --- NextAuth adapter models (required for OAuth providers like Google) ---
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+}
+
+model Generation {
+  id          String   @id @default(cuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  type        String   // "image" | "video" | "transcribe" | "captions" | "audio-enhance" | "auto-edit"
+  provider    String   // "openai" | "wavespeed" | "pixverse"
+  model       String?  // catalog model id, e.g. "pixverse-v5.5" — needed to route status polling
+  prompt      String
+  status      String   @default("queued") // queued | processing | completed | failed
+  resultUrl   String?
+  resultText  String?  // for text-out tools, e.g. a transcript
+  providerJobId String?
+  costCredits Int      @default(0)
+  error       String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([userId])
+}
+
+// --- Studio: a project is an ordered sequence of video scenes, generated
+// individually then viewed/assembled together (à la ElevenLabs Studio, but
+// for text-to-video scenes instead of narration blocks). ---
+model Project {
+  id        String   @id @default(cuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  title     String   @default("Untitled project")
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  scenes    Scene[]
+
+  @@index([userId])
+}
+
+model Scene {
+  id            String   @id @default(cuid())
+  projectId     String
+  project       Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  order         Int      @default(0)
+  prompt        String   @default("")
+  model         String?  // PixVerse model id, e.g. "pixverse-v5.5"
+  duration      Int      @default(5)
+  refImageUrl   String?  // optional reference image for image-to-video
+
+  status        String   @default("draft") // draft | queued | processing | completed | failed
+  resultUrl     String?
+  providerJobId String?
+  costCredits   Int      @default(0)
+  error         String?
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  @@index([projectId])
+}
+
+model Transaction {
+  id           String   @id @default(cuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  credits      Int      // positive = purchased, negative = spent
+  reason       String   // "purchase" | "generation" | "signup_bonus"
+  stripeSessionId String?
+
+  createdAt    DateTime @default(now())
+
+  @@index([userId])
+}

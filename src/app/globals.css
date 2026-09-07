@@ -1,0 +1,146 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+
+  /* Default accent theme — "Nebula" (violet → pink → amber). Values are
+     space-separated RGB channels so Tailwind's rgb(var(--x) / <alpha-value>)
+     opacity utilities (bg-iris/25, text-amber/70, …) keep working. Switched
+     by the Appearance page via [data-theme] on <html>. */
+  --iris: 124 92 255;
+  --pink: 255 77 157;
+  --amber: 255 178 62;
+  --cyan: 52 224 216;
+}
+
+[data-theme="ocean"] {
+  --iris: 45 130 255;
+  --pink: 34 211 238;
+  --amber: 56 189 248;
+  --cyan: 20 184 166;
+}
+[data-theme="forest"] {
+  --iris: 34 197 94;
+  --pink: 132 204 22;
+  --amber: 250 204 21;
+  --cyan: 45 212 191;
+}
+[data-theme="sunset"] {
+  --iris: 249 115 22;
+  --pink: 244 63 94;
+  --amber: 250 204 21;
+  --cyan: 251 146 60;
+}
+[data-theme="mono"] {
+  --iris: 161 161 170;
+  --pink: 212 212 216;
+  --amber: 250 250 250;
+  --cyan: 161 161 170;
+}
+
+body {
+  position: relative;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ---- Living aurora backdrop -------------------------------------------------
+   Two slow-drifting color blobs + a faint grid + film grain, all fixed behind
+   the content so the whole app feels like a lit studio rather than flat black. */
+body::before {
+  content: "";
+  position: fixed;
+  inset: -20%;
+  z-index: -2;
+  background:
+    radial-gradient(45% 45% at 18% 18%, rgba(124, 92, 255, 0.28), transparent 60%),
+    radial-gradient(40% 40% at 82% 12%, rgba(255, 77, 157, 0.22), transparent 60%),
+    radial-gradient(50% 50% at 75% 88%, rgba(255, 178, 62, 0.18), transparent 60%),
+    radial-gradient(45% 45% at 12% 85%, rgba(52, 224, 216, 0.14), transparent 60%);
+  filter: blur(20px);
+  animation: drift 22s ease-in-out infinite;
+}
+
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  /* Hairline grid to reinforce the "workbench" feel, very subtle. */
+  background-image:
+    linear-gradient(to right, rgba(255, 255, 255, 0.025) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.025) 1px, transparent 1px);
+  background-size: 46px 46px;
+  mask-image: radial-gradient(circle at 50% 30%, black, transparent 85%);
+}
+
+@layer components {
+  /* Primary action — vibrant gradient with a soft glow that lifts on hover. */
+  .btn-amber {
+    @apply relative inline-flex items-center justify-center gap-2 rounded-full
+           bg-gradient-to-r from-iris via-pink to-amber px-5 py-2.5
+           font-semibold text-white shadow-glow transition-all duration-300
+           hover:-translate-y-0.5 hover:shadow-[0_0_50px_-6px_rgba(255,77,157,0.6)]
+           focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2
+           focus-visible:outline-iris disabled:translate-y-0 disabled:opacity-40
+           disabled:shadow-none disabled:cursor-not-allowed;
+  }
+  /* Secondary — glass pill with a gradient border that warms on hover. */
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-full border
+           border-white/15 bg-white/5 px-5 py-2.5 font-medium text-paper backdrop-blur
+           transition-all duration-300 hover:border-iris/60 hover:bg-white/10
+           focus-visible:outline focus-visible:outline-2 focus-visible:outline-iris;
+  }
+  .field {
+    @apply w-full rounded-md border border-white/10 bg-white/[0.04] px-3.5 py-2.5
+           text-paper backdrop-blur placeholder:text-mute transition-colors
+           focus:border-iris/70 focus:bg-white/[0.06] focus:outline-none
+           focus:ring-2 focus:ring-iris/25;
+  }
+  /* <select> popups render with the OS's native option list, which ignores our
+     dark theme and defaults to dark text on white — nearly invisible against
+     our light `text-paper`. Force a legible dark background for the list. */
+  select.field option {
+    background-color: #16161F;
+    color: #F5F4FF;
+  }
+  /* Glass card — the workhorse surface across every page. */
+  .card {
+    @apply rounded-lg border border-white/10 bg-white/[0.035] backdrop-blur-xl
+           shadow-[0_8px_40px_-16px_rgba(0,0,0,0.7)];
+  }
+  .eyebrow {
+    @apply font-mono text-xs uppercase tracking-[0.28em] text-transparent bg-clip-text
+           bg-gradient-to-r from-iris via-pink to-amber;
+  }
+}
+
+@layer utilities {
+  /* Gradient headline text. */
+  .text-gradient {
+    @apply text-transparent bg-clip-text bg-gradient-to-r from-iris via-pink to-amber;
+  }
+  /* Animated shimmering gradient text (for the hero keyword). */
+  .text-gradient-anim {
+    @apply text-transparent bg-clip-text;
+    background-image: linear-gradient(
+      100deg,
+      #7c5cff 10%, #ff4d9d 35%, #ffb23e 55%, #ff4d9d 75%, #7c5cff 90%
+    );
+    background-size: 200% auto;
+    animation: shimmer 6s linear infinite;
+  }
+}
+
+/* Respect reduced-motion preferences everywhere. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
