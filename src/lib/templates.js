@@ -1,8 +1,9 @@
 // ---------------------------------------------------------------------------
-// PROMPT TEMPLATES — curated starting points, in the spirit of the template
-// galleries other AI generation tools ship (Runway, Pika, InVideo, Midjourney,
-// etc.). Pure data: pick one to prefill the prompt (and mode) in Quick Create
-// or a Studio scene. Add more here — nothing else needs to change.
+// LEGACY seed data only. Templates are now stored in the DB (`Template`
+// model) and managed live from Admin > Templates — the app no longer reads
+// this file at runtime. It exists so `scripts/seed-templates.mjs` has a
+// starting set to copy in on a fresh database. Edit templates in Admin, not
+// here, unless you're re-seeding a brand-new environment.
 // ---------------------------------------------------------------------------
 
 /**

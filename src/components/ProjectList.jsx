@@ -1,11 +1,8 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { templatesFor } from "@/lib/templates";
-
-const VIDEO_TEMPLATES = templatesFor("video");
 
 // Cycled gradient + icon tiles stand in for template thumbnails (no stock
 // imagery on hand) — kept on-brand with the app's iris → pink → amber palette,
@@ -29,49 +26,61 @@ const LOOKS = {
 
 // Every template gets its own icon (not just its category's) so cards in the
 // same category — e.g. three "Product" templates — still read as distinct.
-// Falls back to the category default above for any id not listed here.
-const ICON_BY_ID = {
-  "drone-reveal": DroneIcon,
-  "city-timelapse": SkylineIcon,
-  "cinematic-establishing": ClapperIcon,
-  "slow-motion-splash": DropletIcon,
-  "product-hero": BottleIcon,
-  "product-unbox": BoxOpenIcon,
-  "packaging-float": BoxFloatIcon,
-  "food-macro": SteamIcon,
-  "food-pour": DrizzleIcon,
-  "coffee-pour": CoffeeIcon,
-  "walk-through": FootstepsIcon,
-  "hero-turn": TurnArrowIcon,
-  "talking-head": MicIcon,
-  "nature-macro": FlowerIcon,
-  "ocean-waves": WaveIcon,
-  "forest-light": TreeIcon,
-  "ugc-selfie": PhoneIcon,
-  "day-in-life": SunIcon,
-  "unboxing-ugc": StarBoxIcon,
-  "real-estate-flythrough": HouseIcon,
-  "property-aerial": DroneIcon,
-  "fashion-runway": SpotlightIcon,
-  "fabric-closeup": FabricIcon,
-  "car-reveal": CarIcon,
-  "road-drive": RoadIcon,
-  "gadget-float": ChipIcon,
-  "circuit-macro": CircuitIcon,
-  "travel-montage": CompassIcon,
-  "street-market": BasketIcon,
-  "sports-action": BoltIcon,
-  "wedding-moment": RingIcon,
-  "explainer-abstract": ShapesIcon,
-  "data-viz-motion": ChartIcon,
+// Templates now live in the DB (admin-editable) with generated ids, so this
+// keys off the stable `label` instead; anything not listed (e.g. a template
+// an admin adds later) falls back to its category's default icon above.
+const ICON_BY_LABEL = {
+  "Cinematic drone reveal": DroneIcon,
+  "City night timelapse": SkylineIcon,
+  "Establishing shot": ClapperIcon,
+  "Slow-motion splash": DropletIcon,
+  "Product hero spin": BottleIcon,
+  "Unboxing reveal": BoxOpenIcon,
+  "Floating packaging": BoxFloatIcon,
+  "Food macro close-up": SteamIcon,
+  "Sauce pour shot": DrizzleIcon,
+  "Coffee pour overhead": CoffeeIcon,
+  "Character walk-through": FootstepsIcon,
+  "Hero turnaround": TurnArrowIcon,
+  "Talking-head intro": MicIcon,
+  "Nature macro bloom": FlowerIcon,
+  "Ocean waves aerial": WaveIcon,
+  "Forest light rays": TreeIcon,
+  "UGC selfie-style clip": PhoneIcon,
+  "Day-in-the-life montage": SunIcon,
+  "UGC product reaction": StarBoxIcon,
+  "Real estate fly-through": HouseIcon,
+  "Property aerial reveal": DroneIcon,
+  "Fashion runway walk": SpotlightIcon,
+  "Fabric texture close-up": FabricIcon,
+  "Car showroom reveal": CarIcon,
+  "Scenic road drive": RoadIcon,
+  "Tech gadget showcase": ChipIcon,
+  "Circuit board macro": CircuitIcon,
+  "Travel destination montage": CompassIcon,
+  "Bustling street market": BasketIcon,
+  "Sports action freeze": BoltIcon,
+  "Wedding first look": RingIcon,
+  "Abstract explainer background": ShapesIcon,
+  "Data visualization motion": ChartIcon,
 };
 
-export function ProjectList({ initialProjects }) {
+export function ProjectList({ initialProjects, initialTemplates }) {
   const router = useRouter();
   const [projects, setProjects] = useState(initialProjects);
+  const [templates, setTemplates] = useState(initialTemplates ?? []);
   const [prompt, setPrompt] = useState("");
   const [busy, setBusy] = useState(false);
   const rowRef = useRef(null);
+
+  // Templates are admin-editable now; re-fetch on mount so a change made in
+  // Admin shows up without needing a fresh server render of this page.
+  useEffect(() => {
+    fetch("/api/templates?mode=video")
+      .then((r) => r.json())
+      .then((d) => d.templates && setTemplates(d.templates))
+      .catch(() => {});
+  }, []);
 
   async function createProject(initialPrompt, title) {
     setBusy(true);
@@ -162,9 +171,9 @@ export function ProjectList({ initialProjects }) {
         </div>
 
         <div ref={rowRef} className="flex gap-4 overflow-x-auto pb-2 scroll-smooth">
-          {VIDEO_TEMPLATES.map((t) => {
+          {templates.map((t) => {
             const look = LOOKS[t.category] ?? LOOKS.Cinematic;
-            const Icon = ICON_BY_ID[t.id] ?? look.Icon;
+            const Icon = ICON_BY_LABEL[t.label] ?? look.Icon;
             return (
               <button
                 key={t.id}

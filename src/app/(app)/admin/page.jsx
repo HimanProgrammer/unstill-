@@ -3,12 +3,13 @@ import Link from "next/link";
 import { requireAdmin } from "@/lib/session";
 import { db } from "@/lib/db";
 import { InviteManager } from "@/components/InviteManager";
+import { TemplateManager } from "@/components/TemplateManager";
 
 export default async function AdminPage() {
   const admin = await requireAdmin();
   if (!admin) redirect("/dashboard");
 
-  const [users, generations, totals, invites, feedback] = await Promise.all([
+  const [users, generations, totals, invites, feedback, templates] = await Promise.all([
     db.user.findMany({
       orderBy: { createdAt: "desc" },
       take: 50,
@@ -30,6 +31,7 @@ export default async function AdminPage() {
       take: 50,
       include: { user: { select: { email: true } } },
     }),
+    db.template.findMany({ orderBy: { order: "asc" } }),
   ]);
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
@@ -52,6 +54,14 @@ export default async function AdminPage() {
             Generate a link to share with friends & family — redeeming it grants bonus credits and marks them as a beta tester.
           </p>
           <InviteManager initialInvites={invites} appUrl={appUrl} />
+        </section>
+
+        <section>
+          <h2 className="mb-1 font-display text-lg">Templates</h2>
+          <p className="mb-3 text-sm text-mute">
+            The "start from a template" library in Studio and Create — add, edit, or remove without a deploy.
+          </p>
+          <TemplateManager initialTemplates={templates} />
         </section>
 
         <section>

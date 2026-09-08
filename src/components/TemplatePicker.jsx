@@ -1,13 +1,21 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { templatesFor } from "@/lib/templates";
 
 // Small "Templates" popover — pick a preset prompt to prefill a generator.
+// Templates are admin-editable (see Admin > Templates), fetched on demand.
 export function TemplatePicker({ mode, onPick, label = "Templates" }) {
   const [open, setOpen] = useState(false);
+  const [templates, setTemplates] = useState([]);
   const ref = useRef(null);
-  const templates = templatesFor(mode);
+
+  useEffect(() => {
+    if (!open) return;
+    fetch(`/api/templates?mode=${mode}`)
+      .then((r) => r.json())
+      .then((d) => d.templates && setTemplates(d.templates))
+      .catch(() => {});
+  }, [open, mode]);
 
   useEffect(() => {
     if (!open) return;

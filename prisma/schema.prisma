@@ -160,6 +160,20 @@ model Scene {
   @@index([projectId])
 }
 
+// Prompt templates shown in Studio/Create's "start from a template" row.
+// Editable from Admin instead of hardcoded, so new ones don't need a deploy.
+model Template {
+  id        String   @id @default(cuid())
+  label     String
+  blurb     String   @default("")
+  category  String   @default("Cinematic")
+  mode      String   @default("video") // "image" | "video"
+  prompt    String
+  order     Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
 model Transaction {
   id           String   @id @default(cuid())
   userId       String
