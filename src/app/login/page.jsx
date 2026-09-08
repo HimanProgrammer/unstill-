@@ -1,12 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { signIn, getProviders } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { LogoFull } from "@/components/Logo";
 
+// useSearchParams() (for ?invite=CODE) requires a Suspense boundary above it
+// for Next's static export step, even though this page is fully client-side.
 export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
+  );
+}
+
+function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const inviteCode = searchParams.get("invite");

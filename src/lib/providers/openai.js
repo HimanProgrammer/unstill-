@@ -1,10 +1,20 @@
 import OpenAI from "openai";
 
-const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+// Built lazily (only when a request actually needs it), not at module load —
+// the OpenAI SDK throws immediately if the key is missing, which otherwise
+// crashes Next's build-time route analysis on a deploy with no key set yet.
+let _openai = null;
+function client() {
+  if (!_openai) {
+    if (!process.env.OPENAI_API_KEY) throw new Error("OPENAI_API_KEY is not set");
+    _openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+  }
+  return _openai;
+}
 
 export const openaiImageProvider = {
   async generateImage(prompt, opts) {
-    const result = await openai.images.generate({
+    const result = await client().images.generate({
       model: "gpt-image-1",
       prompt,
       size: opts?.size ?? "1024x1024",
@@ -21,7 +31,7 @@ export const openaiImageProvider = {
 
 /** Chat completion helper — used by the prompt-assist feature on the studio page. */
 export async function chatComplete(system, user) {
-  const res = await openai.chat.completions.create({
+  const res = await client().chat.completions.create({
     model: "gpt-4o-mini",
     messages: [
       { role: "system", content: system },
