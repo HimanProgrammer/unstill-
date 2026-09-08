@@ -72,6 +72,13 @@ export function ProjectList({ initialProjects, initialTemplates }) {
   const [prompt, setPrompt] = useState("");
   const [busy, setBusy] = useState(false);
   const rowRef = useRef(null);
+  const promptRef = useRef(null);
+
+  function useTemplate(t) {
+    setPrompt(t.prompt);
+    promptRef.current?.focus();
+    promptRef.current?.scrollIntoView({ behavior: "smooth", block: "center" });
+  }
 
   // Templates are admin-editable now; re-fetch on mount so a change made in
   // Admin shows up without needing a fresh server render of this page.
@@ -132,6 +139,7 @@ export function ProjectList({ initialProjects, initialTemplates }) {
       <div className="mt-5 overflow-hidden rounded-xl border border-white/10 bg-gradient-to-br from-iris/25 via-pink/20 to-amber/20 p-1">
         <div className="flex items-center gap-3 rounded-lg bg-ink/70 p-3 backdrop-blur">
           <input
+            ref={promptRef}
             className="flex-1 bg-transparent px-2 text-paper outline-none placeholder:text-mute"
             value={prompt}
             onChange={(e) => setPrompt(e.target.value)}
@@ -151,7 +159,10 @@ export function ProjectList({ initialProjects, initialTemplates }) {
       {/* Template row */}
       <div className="relative mt-8">
         <div className="mb-3 flex items-center justify-between">
-          <p className="font-mono text-xs uppercase tracking-widest text-mute">Start from a template</p>
+          <div>
+            <p className="font-mono text-xs uppercase tracking-widest text-mute">Start from a template</p>
+            <p className="mt-0.5 text-xs text-mute">Picking one fills the prompt above — edit it before creating.</p>
+          </div>
           <div className="flex gap-1">
             <button
               onClick={() => scrollRow(-1)}
@@ -177,7 +188,7 @@ export function ProjectList({ initialProjects, initialTemplates }) {
             return (
               <button
                 key={t.id}
-                onClick={() => createProject(t.prompt, t.label)}
+                onClick={() => useTemplate(t)}
                 disabled={busy}
                 className="group w-52 shrink-0 text-left"
               >
