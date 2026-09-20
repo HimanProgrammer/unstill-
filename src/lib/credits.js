@@ -2,9 +2,12 @@ import { db } from "@/lib/db";
 
 // Credit cost per generation. Tune to your real WaveSpeedAI + OpenAI costs + margin.
 export const CREDIT_COST = {
-  image: 1,   // image generation
-  video: 10,  // WaveSpeedAI video job (adjust per model/duration if needed)
-  script: 5,  // video script generation from reference video
+  image: 1,      // image generation
+  video: 10,     // WaveSpeedAI video job (adjust per model/duration if needed)
+  script: 5,     // video script generation from reference video
+  pika: 2,       // Pika AI (fast, affordable option)
+  pollo: 10,     // Pollo.ai videos
+  seedance: 12,  // Seedance2 AI (premium quality)
 };
 
 export class InsufficientCreditsError extends Error {

@@ -12,6 +12,10 @@ export async function PATCH(req, { params }) {
     if (typeof body[key] === "string") data[key] = body[key];
   }
   if (typeof body.order === "number") data.order = body.order;
+  if (data.prompt !== undefined) {
+    const existing = await db.template.findUnique({ where: { id: params.id } });
+    if (existing && existing.prompt !== data.prompt) data.previewUrl = null;
+  }
 
   const template = await db.template.update({ where: { id: params.id }, data }).catch(() => null);
   if (!template) return NextResponse.json({ error: "Not found" }, { status: 404 });

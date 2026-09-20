@@ -191,6 +191,42 @@ export const MODELS = [
     note: "creative, 1–15s",
   },
 
+  // ----------------------- VIDEO (Seedance2 AI) ----------------------------
+  {
+    id: "seedance-standard",
+    label: "Seedance Standard",
+    type: "video",
+    provider: "seedance",
+    endpoint: "standard",
+    unit: "second",
+    price: 0.095,
+    outputPerDollar: "~10.5 seconds",
+    durations: [5, 8, 10, 15],
+  },
+  {
+    id: "seedance-premium",
+    label: "Seedance Premium",
+    type: "video",
+    provider: "seedance",
+    endpoint: "premium",
+    unit: "second",
+    price: 0.118,
+    outputPerDollar: "~8.5 seconds",
+    durations: [5, 8, 10, 15, 20],
+  },
+  {
+    id: "seedance-ultra",
+    label: "Seedance Ultra",
+    type: "video",
+    provider: "seedance",
+    endpoint: "ultra",
+    unit: "second",
+    price: 0.165,
+    outputPerDollar: "~6 seconds",
+    durations: [5, 8, 10, 15, 20, 30],
+    note: "4K quality",
+  },
+
   // ----------------------- VIDEO (Pollo.ai) --------------------------------
   {
     id: "pollo-photorealistic",
@@ -329,6 +365,18 @@ export const MODELS = [
     outputPerDollar: "~143 seconds",
     durations: [6, 8, 10, 12, 14, 16, 18, 20],
     note: "cheapest",
+  },
+  {
+    id: "pika-via-pollo",
+    label: "Pika AI (via Pollo)",
+    type: "video",
+    provider: "wavespeed",
+    endpoint: "pika/pika-ai/text-to-video",
+    unit: "second",
+    price: 0.01,
+    outputPerDollar: "100 seconds",
+    durations: [5, 10, 15],
+    note: "fast, affordable",
   },
 ];
 
