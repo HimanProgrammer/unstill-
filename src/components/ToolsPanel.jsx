@@ -2,9 +2,18 @@
 
 import { useCallback, useRef, useState } from "react";
 import { Timeline, formatTime } from "@/components/Timeline";
+import { ScriptToVideo } from "@/components/ScriptToVideo";
 import { CAPTION_PRESETS } from "@/lib/captionPresets";
+import { videoModels as initialVideoModels } from "@/lib/providers";
 
 const TOOLS = [
+  {
+    id: "script-to-video",
+    label: "Script to Scenes",
+    blurb: "Upload a video, generate a script, parse into scenes, and create videos for each.",
+    isSpecial: true,
+    cost: 5,
+  },
   {
     id: "transcribe",
     label: "Video → Text",
@@ -157,6 +166,38 @@ export function ToolsPanel({ initialCredits }) {
       if (cost > 0) setCredits((c) => c + cost);
       setJob(active, { busy: false, error: "Network error. Try again." });
     }
+  }
+
+  // Special handling for script-to-video tool
+  if (tool.isSpecial && tool.id === "script-to-video") {
+    return (
+      <div>
+        <div className="flex items-center justify-between">
+          <h1 className="font-display text-2xl font-medium">Edit</h1>
+          <span className="font-mono text-sm text-mute"><span className="text-amber">{credits}</span> credits</span>
+        </div>
+        <p className="mt-1 text-sm text-mute">Post-production tools — upload a file or paste a media URL, then run a tool on it.</p>
+
+        <div className="mt-5 flex flex-wrap gap-2">
+          {TOOLS.map((t) => (
+            <button
+              key={t.id}
+              onClick={() => setActive(t.id)}
+              className={`rounded-full px-4 py-2 text-sm transition-colors ${
+                active === t.id ? "bg-amber text-ink" : "border border-white/10 text-mute hover:text-paper"
+              }`}
+            >
+              {t.label}
+              {t.cost === 0 && <span className="ml-1.5 text-[10px] text-okay">FREE</span>}
+            </button>
+          ))}
+        </div>
+
+        <div className="card mt-5 p-6">
+          <ScriptToVideo videoModels={initialVideoModels} />
+        </div>
+      </div>
+    );
   }
 
   return (

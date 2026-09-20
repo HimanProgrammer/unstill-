@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 export const CREDIT_COST = {
   image: 1,   // image generation
   video: 10,  // WaveSpeedAI video job (adjust per model/duration if needed)
+  script: 5,  // video script generation from reference video
 };
 
 export class InsufficientCreditsError extends Error {

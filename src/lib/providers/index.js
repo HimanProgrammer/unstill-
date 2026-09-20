@@ -1,6 +1,7 @@
 import { openaiImageProvider } from "./openai";
 import { wavespeedGenerateImage, wavespeedSubmitVideo, wavespeedGetVideoStatus } from "./wavespeed";
 import { pixverseVideoProvider } from "./pixverse";
+import { polloSubmitVideo, polloGetVideoStatus } from "./pollo";
 import {
   IMAGE_MODELS,
   VIDEO_MODELS,
@@ -9,14 +10,18 @@ import {
   getModel,
 } from "./catalog";
 
-// Video generation is routed per-model: PixVerse models go to the PixVerse
-// client (and support image-to-video), everything else goes through the
-// WaveSpeedAI aggregator (Veo, Kling, Hailuo, Wan, Luma, Sora, LTX, …).
+// Video generation is routed per-model:
+// - PixVerse models → PixVerse client (supports image-to-video)
+// - Pollo models → Pollo.ai client
+// - Everything else → WaveSpeedAI aggregator (Veo, Kling, Hailuo, Wan, Luma, Sora, LTX, …)
 // `getVideoStatus` takes the model id too since a bare job id doesn't say
 // which provider it belongs to.
 export const videoProvider = {
   async submitVideo(prompt, opts) {
     const model = (opts?.model && getModel(opts.model)) || getModel(DEFAULT_VIDEO_MODEL);
+    if (model.provider === "pollo") {
+      return polloSubmitVideo(model.id, prompt, opts);
+    }
     if (model.provider === "wavespeed") {
       return wavespeedSubmitVideo(model.id, prompt, opts);
     }
@@ -24,6 +29,7 @@ export const videoProvider = {
   },
   async getVideoStatus(modelId, providerJobId) {
     const model = (modelId && getModel(modelId)) || getModel(DEFAULT_VIDEO_MODEL);
+    if (model.provider === "pollo") return polloGetVideoStatus(providerJobId);
     if (model.provider === "wavespeed") return wavespeedGetVideoStatus(providerJobId);
     return pixverseVideoProvider.getVideoStatus(providerJobId);
   },

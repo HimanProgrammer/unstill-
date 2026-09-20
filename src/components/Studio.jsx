@@ -15,6 +15,7 @@ export function Studio({ videoModels, imageModels, initialCredits }) {
   );
   const [duration, setDuration] = useState(5);
   const [refImageUrl, setRefImageUrl] = useState("");
+  const [videoUrl, setVideoUrl] = useState("");
   const [credits, setCredits] = useState(initialCredits);
 
   const [current, setCurrent] = useState(null);
@@ -22,8 +23,11 @@ export function Studio({ videoModels, imageModels, initialCredits }) {
   const [error, setError] = useState("");
   const pollTimer = useRef(null);
 
-  const cost = mode === "image" ? 1 : 10;
-  const canGenerate = prompt.trim().length > 0 && !busy && credits >= cost;
+  const cost = mode === "image" ? 1 : mode === "video" ? 10 : 5;
+  const canGenerate =
+    ((mode === "script" && videoUrl.trim().length > 0) || (mode !== "script" && prompt.trim().length > 0))
+    && !busy
+    && credits >= cost;
 
   const pollVideo = useCallback((id) => {
     // Videos are async on PixVerse; poll every 5s until terminal.
@@ -49,11 +53,16 @@ export function Studio({ videoModels, imageModels, initialCredits }) {
     setBusy(true);
     setCurrent(null);
 
-    const endpoint = mode === "image" ? "/api/generate/image" : "/api/generate/video";
-    const body =
-      mode === "image"
-        ? { prompt, size, model: imageModel }
-        : { prompt, model, duration, imageUrl: refImageUrl.trim() || undefined };
+    let endpoint = "/api/generate/image";
+    let body = { prompt, size, model: imageModel };
+
+    if (mode === "video") {
+      endpoint = "/api/generate/video";
+      body = { prompt, model, duration, imageUrl: refImageUrl.trim() || undefined };
+    } else if (mode === "script") {
+      endpoint = "/api/tools/video-script";
+      body = { videoUrl: videoUrl.trim() };
+    }
 
     try {
       const res = await fetch(endpoint, {
@@ -89,15 +98,16 @@ export function Studio({ videoModels, imageModels, initialCredits }) {
       {/* Control panel */}
       <div className="card h-fit p-5">
         {/* Mode toggle */}
-        <div className="mb-5 flex rounded border border-rail p-1">
+        <div className="mb-5 grid grid-cols-3 gap-1 rounded border border-rail p-1">
           {[
             { id: "image", label: "Text to Image" },
             { id: "video", label: "Text to Video" },
+            { id: "script", label: "Video Script" },
           ].map((m) => (
             <button
               key={m.id}
               onClick={() => setMode(m.id)}
-              className={`flex-1 rounded px-3 py-1.5 text-sm transition-colors ${
+              className={`rounded px-2 py-1.5 text-xs transition-colors ${
                 mode === m.id ? "bg-amber text-ink" : "text-mute hover:text-paper"
               }`}
             >
@@ -106,20 +116,41 @@ export function Studio({ videoModels, imageModels, initialCredits }) {
           ))}
         </div>
 
-        <div className="mb-1 flex items-center justify-between">
-          <label className="block text-sm text-mute">Prompt</label>
-          <TemplatePicker mode={mode} onPick={(t) => setPrompt(t.prompt)} />
-        </div>
-        <textarea
-          className="field min-h-[120px] resize-y"
-          value={prompt}
-          onChange={(e) => setPrompt(e.target.value)}
-          placeholder={
-            mode === "image"
-              ? "A tungsten-lit still life of brass instruments on velvet…"
-              : "A slow dolly across a rain-slick city street at dusk…"
-          }
-        />
+        {mode === "script" ? (
+          <>
+            <div className="mb-1 flex items-center justify-between">
+              <label className="block text-sm text-mute">Video URL</label>
+              <TemplatePicker mode={mode} onPick={(t) => setVideoUrl(t.prompt)} />
+            </div>
+            <input
+              type="url"
+              className="field"
+              value={videoUrl}
+              onChange={(e) => setVideoUrl(e.target.value)}
+              placeholder="https://example.com/video.mp4"
+            />
+            <p className="mt-1 text-xs text-mute">
+              Paste a video URL to analyze and generate a professional script from it.
+            </p>
+          </>
+        ) : (
+          <>
+            <div className="mb-1 flex items-center justify-between">
+              <label className="block text-sm text-mute">Prompt</label>
+              <TemplatePicker mode={mode} onPick={(t) => setPrompt(t.prompt)} />
+            </div>
+            <textarea
+              className="field min-h-[120px] resize-y"
+              value={prompt}
+              onChange={(e) => setPrompt(e.target.value)}
+              placeholder={
+                mode === "image"
+                  ? "A tungsten-lit still life of brass instruments on velvet…"
+                  : "A slow dolly across a rain-slick city street at dusk…"
+              }
+            />
+          </>
+        )}
 
         {mode === "image" ? (
           <>
@@ -140,7 +171,7 @@ export function Studio({ videoModels, imageModels, initialCredits }) {
               </select>
             </div>
           </>
-        ) : (
+        ) : mode === "video" ? (
           <>
             <div className="mt-4">
               <label className="mb-1 block text-sm text-mute">Model</label>
@@ -187,7 +218,7 @@ export function Studio({ videoModels, imageModels, initialCredits }) {
               </p>
             </div>
           </>
-        )}
+        ) : null}
 
         <button className="btn-amber mt-6 w-full" disabled={!canGenerate} onClick={generate}>
           {busy ? "Generating…" : `Generate — ${cost} credit${cost > 1 ? "s" : ""}`}
@@ -219,13 +250,36 @@ function Output({ mode, busy, current }) {
     );
   }
 
-  if (current?.status === "completed" && current.resultUrl) {
-    return current.type === "video" ? (
-      <video src={current.resultUrl} controls className="max-h-[70vh] w-full rounded" />
-    ) : (
-      // eslint-disable-next-line @next/next/no-img-element
-      <img src={current.resultUrl} alt={current.prompt} className="max-h-[70vh] w-full rounded object-contain" />
-    );
+  if (current?.status === "completed") {
+    if (current.type === "script" && current.resultText) {
+      return (
+        <div className="w-full overflow-auto">
+          <div className="prose prose-sm prose-invert max-w-none">
+            <pre className="whitespace-pre-wrap bg-ink-darker rounded p-4 text-paper text-sm leading-relaxed overflow-x-auto">
+              {current.resultText}
+            </pre>
+          </div>
+          <button
+            onClick={() => {
+              const text = current.resultText;
+              navigator.clipboard.writeText(text);
+            }}
+            className="mt-4 rounded bg-amber px-3 py-1.5 text-sm text-ink transition hover:bg-amber/80"
+          >
+            Copy Script
+          </button>
+        </div>
+      );
+    }
+
+    if (current.resultUrl) {
+      return current.type === "video" ? (
+        <video src={current.resultUrl} controls className="max-h-[70vh] w-full rounded" />
+      ) : (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={current.resultUrl} alt={current.prompt} className="max-h-[70vh] w-full rounded object-contain" />
+      );
+    }
   }
 
   if (current?.status === "failed") {
@@ -242,7 +296,7 @@ function Output({ mode, busy, current }) {
     <div className="text-center">
       <div className="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-rail border-t-amber" />
       <p className="mt-4 font-mono text-xs uppercase tracking-widest text-mute">
-        {mode === "video" ? "Rendering — this can take a minute" : "Painting the frame"}
+        {mode === "video" ? "Rendering — this can take a minute" : mode === "script" ? "Analyzing video…" : "Painting the frame"}
       </p>
     </div>
   );
